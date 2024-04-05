@@ -15,12 +15,13 @@ func GetMongoClient() *mongo.Client {
 	mongoConnectionString := fmt.Sprintf("mongodb+srv://%s:%s@%s", env.MongoUserName, env.MongoPassword, env.MongoUrl)
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	opts := options.Client().ApplyURI(mongoConnectionString).SetServerAPIOptions(serverAPI)
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		panic(err)
 	}
-
 	return client
 }
