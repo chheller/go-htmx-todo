@@ -15,32 +15,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type User struct {
-	id         int64
-	created_at time.Time
-	email      string
-	user_name  string
-	password   string
-}
-
 func main() {
-
+	//Create a channel to recieve shutdown signals.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	signal.Notify(stop, syscall.SIGTERM)
 
+	//Connect to the database, and defer closing the connection.
 	client := database.GetMongoClient()
 	defer CloseDb(client)
 
+	// Create the router, delegating to modules/router/router.go for the implementation.
 	httpRouter := router.CreateRouter(client)
 	srv := &http.Server{
 		Handler: httpRouter,
 		Addr:    fmt.Sprintf(":%v", 8080),
 	}
+	// Run the server in a never ending goroutine.
 	go func() {
 		panic(srv.ListenAndServe())
 	}()
-	//Recieve shutdown signals.
+	//Recieve shutdown signals, and try to shutdown gracefully within 10 seconds.
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

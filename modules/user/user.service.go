@@ -22,6 +22,7 @@ func (svc *UserService) CreateUser(user User) {
 		Event:  event.Event{Id: 1, Timestamp: time.Now()},
 		UserId: uuid.New(),
 	}
+
 	res, err := userCollection.InsertOne(svc.Ctx, userCreatedEvent)
 
 	if err != nil {

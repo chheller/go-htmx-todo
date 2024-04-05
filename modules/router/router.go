@@ -8,6 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// CreateRouter creates a new http.ServeMux and initializes the http handlers.
+// Wires up services with a database client, and attaches those services to handlers
+// Responsible for middleware stack as well.
 func CreateRouter(client *mongo.Client) *http.ServeMux {
 	router := http.NewServeMux()
 	userHandler := user.UserHandlers{
@@ -15,9 +18,8 @@ func CreateRouter(client *mongo.Client) *http.ServeMux {
 			Client: client,
 			Ctx:    context.Background(),
 		},
-		Router: router,
 	}
-	userHandler.InitializeHandlers()
+	userHandler.InitializeHandlers(router)
 
 	return router
 }
