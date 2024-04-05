@@ -11,26 +11,21 @@ type UserHandlers struct {
 }
 
 func (uh *UserHandlers) InitializeHandlers() {
-
-	handleGetUser := func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte("GET /user"))
-	}
-
-	handleUpdateUser := func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte("PUT /user"))
-	}
-
-	uh.Router.HandleFunc("GET /user", handleGetUser)
-	uh.Router.HandleFunc("POST /user", handleCreateUser(&uh.UserService))
-	uh.Router.HandleFunc("PUT /user", handleUpdateUser)
-
+	uh.Router.HandleFunc("GET /user", uh.handleGetUser)
+	uh.Router.HandleFunc("POST /user", uh.handleCreateUser)
+	uh.Router.HandleFunc("PUT /user", uh.handleUpdateUser)
 }
 
-func handleCreateUser(svc *UserService) func(http.ResponseWriter, *http.Request) {
-	return func(res http.ResponseWriter, req *http.Request) {
-		user := &User{}
-		json.NewDecoder(req.Body).Decode(user)
-		svc.CreateUser(*user)
-		res.Write([]byte("POST /user"))
-	}
+func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Request) {
+	user := &User{}
+	json.NewDecoder(req.Body).Decode(user)
+	u.UserService.CreateUser(*user)
+	res.Write([]byte("POST /user"))
+}
+func (u *UserHandlers) handleUpdateUser(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("PUT /user"))
+}
+
+func (u *UserHandlers) handleGetUser(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("GET /user"))
 }

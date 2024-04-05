@@ -7,7 +7,7 @@ import (
 
 type UserCreated struct {
 	Event  event.Event
-	email  string
+	Email  string
 	UserId uuid.UUID
 }
 
@@ -15,18 +15,18 @@ type UserUpdated struct {
 	event               event.Event
 	userId              uuid.UUID
 	UserPasswordUpdated struct {
-		password  string
-		salt      string
-		algorithm PasswordAlgorithm
+		Password  string
+		Salt      string
+		Algorithm PasswordAlgorithm
 	}
 	UserNameUpdated struct {
-		username string
+		Username string
 	}
 	UserEmailUpdated struct {
-		email string
+		Email string
 	}
 }
 
 type User struct {
-	email string
+	Email string
 }

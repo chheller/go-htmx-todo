@@ -18,7 +18,7 @@ type UserService struct {
 func (svc *UserService) CreateUser(user User) {
 	userCollection := svc.Client.Database("go-todo-htmx").Collection("user")
 	userCreatedEvent := UserCreated{
-		email:  user.email,
+		Email:  user.Email,
 		Event:  event.Event{Id: 1, Timestamp: time.Now()},
 		UserId: uuid.New(),
 	}
