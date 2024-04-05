@@ -1,0 +1,23 @@
+{
+    "client": "Thunder Client",
+    "collectionName": "go-htmx-todo",
+    "dateExported": "2024-04-05T02:12:08.270Z",
+    "version": "1.1",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "8c061a8d-594b-44b4-a716-006de5b23aa2",
+            "colId": "b5b81903-03c2-4782-90a6-4f48e422ca27",
+            "containerId": "",
+            "name": "http://localhost:8080/user",
+            "url": "http://localhost:8080/user",
+            "method": "GET",
+            "sortNum": 10000,
+            "created": "2024-04-05T02:11:58.772Z",
+            "modified": "2024-04-05T02:11:58.772Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        }
+    ]
+}
