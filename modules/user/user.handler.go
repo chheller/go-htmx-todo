@@ -6,11 +6,14 @@ import (
 )
 
 type UserHandlers struct {
-	UserService UserService
+	UserService *UserService
 	Router      *http.ServeMux
 }
 
 func (uh *UserHandlers) InitializeHandlers() {
+	if uh.UserService == nil || uh.Router == nil {
+		panic("UserService and Router must be initialized before calling InitializeHandlers")
+	}
 	uh.Router.HandleFunc("GET /user", uh.handleGetUser)
 	uh.Router.HandleFunc("POST /user", uh.handleCreateUser)
 	uh.Router.HandleFunc("PUT /user", uh.handleUpdateUser)

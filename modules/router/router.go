@@ -11,7 +11,7 @@ import (
 func CreateRouter(client *mongo.Client) *http.ServeMux {
 	router := http.NewServeMux()
 	userHandler := user.UserHandlers{
-		UserService: user.UserService{
+		UserService: &user.UserService{
 			Client: client,
 			Ctx:    context.Background(),
 		},
