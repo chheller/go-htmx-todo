@@ -12,8 +12,8 @@ type UserCreated struct {
 }
 
 type UserUpdated struct {
-	event               event.Event
-	userId              uuid.UUID
+	Event               event.Event
+	UserId              uuid.UUID
 	UserPasswordUpdated struct {
 		Password  string
 		Salt      string
