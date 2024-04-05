@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,13 +34,19 @@ func main() {
 	}
 	// Run the server in a never ending goroutine.
 	go func() {
-		panic(srv.ListenAndServe())
+		err := srv.ListenAndServe()
+		if err != nil && errors.Is(err, http.ErrServerClosed) {
+			log.Println("Server closed")
+		} else {
+			log.Panicf("Error stopping server %s", err)
+		}
+
 	}()
 	//Recieve shutdown signals, and try to shutdown gracefully within 10 seconds.
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
+	log.Printf("Shutting down server")
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("error shutting down server %s", err)
 	} else {
