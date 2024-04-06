@@ -4,13 +4,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/chheller/go-htmx-todo/modules/database"
 	"github.com/joho/godotenv"
 )
 
 type Environment struct {
-	MongoUserName string
-	MongoPassword string
-	MongoUrl      string
+	MongoConfig database.MongoClientConfig
 }
 
 var env Environment
@@ -37,22 +36,24 @@ func GetEnvironment(load ...func(...string) error) Environment {
 			log.Fatal("Error loading .env file, falling back to environment variables")
 		}
 
-		MongoUserName, ok := os.LookupEnv("MONGO_USERNAME")
+		mongoUserName, ok := os.LookupEnv("MONGO_USERNAME")
 		if !ok {
 			panic("Missing required environment variable MONGO_USERNAME")
 		}
-		MongoPassword, ok := os.LookupEnv("MONGO_PASSWORD")
+		mongoPassword, ok := os.LookupEnv("MONGO_PASSWORD")
 		if !ok {
 			panic("Missing required environment variable MONGO_PASSWORD")
 		}
-		MongoUrl, ok := os.LookupEnv("MONGO_URL")
+		mongoUrl, ok := os.LookupEnv("MONGO_URL")
 		if !ok {
 			panic("Missing required environment variable MONGO_URL")
 		}
 		env = Environment{
-			MongoUserName,
-			MongoPassword,
-			MongoUrl,
+			MongoConfig: database.MongoClientConfig{
+				Username: mongoUserName,
+				Password: mongoPassword,
+				Url:      mongoUrl,
+			},
 		}
 	}
 	return env
