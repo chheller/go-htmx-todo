@@ -13,12 +13,10 @@ func SendEmail(to string, subject string, body string) {
 	env := config.GetEnvironment().SmtpConfig
 	auth := smtp.PlainAuth("", env.Username, env.Password, env.Host)
 	srvr := fmt.Sprintf("%s:%d", env.Host, env.Port)
-	err := smtp.SendMail(srvr, auth, env.Username, []string{to}, buildMessage(to, subject, body))
+	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n%s", to, subject, body))
+
+	err := smtp.SendMail(srvr, auth, env.Username, []string{to}, msg)
 	if err != nil {
 		log.Panicf("Error sending email %s", err)
 	}
-}
-
-func buildMessage(to string, subject string, body string) []byte {
-	return []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n%s", to, subject, body))
 }
