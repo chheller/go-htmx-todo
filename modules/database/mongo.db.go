@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/chheller/go-htmx-todo/modules/config"
@@ -10,15 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoClientConfig struct {
-	Username string
-	Password string
-	Url      string
-}
-
-func (config *MongoClientConfig) GetMongoConnectionString() string {
-	return fmt.Sprintf("mongodb+srv://%s:%s@%s", config.Username, config.Password, config.Url)
-}
 func GetMongoClient() *mongo.Client {
 	env := config.GetEnvironment()
 	mongoConnectionString := env.MongoConfig.GetMongoConnectionString()
