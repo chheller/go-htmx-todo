@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/chheller/go-htmx-todo/modules/event"
 	"github.com/google/uuid"
 )
@@ -29,4 +31,24 @@ type UserUpdated struct {
 
 type User struct {
 	Email string
+}
+
+type EmailOtpIssued struct {
+	Event             event.Event
+	UserId            uuid.UUID
+	VerificationToken string
+	IssuedAt          time.Time
+	ExpiresAt         time.Time
+}
+
+type EmailOtpVerified struct {
+	Event             event.Event
+	UserId            uuid.UUID
+	VerificationToken string
+}
+
+type EmailOtpRevoked struct {
+	Event             event.Event
+	UserId            uuid.UUID
+	VerificationToken string
 }

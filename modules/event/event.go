@@ -4,6 +4,5 @@ import "time"
 
 type Event struct {
 	Timestamp time.Time
-	Id        uint64
-	Version   uint64
+	Type      string
 }
