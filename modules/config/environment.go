@@ -11,8 +11,9 @@ import (
 )
 
 type Environment struct {
-	MongoConfig *MongoClientConfig
-	SmtpConfig  *SmtpClientConfig
+	MongoConfig                  *MongoClientConfig
+	SmtpConfig                   *SmtpClientConfig
+	EmailVerificationRedirectUrl string
 }
 type EnvironmentLoader interface {
 	Load(...string) error
@@ -27,7 +28,7 @@ func GetEnvironment(load ...func(...string) error) *Environment {
 	if env == nil {
 		lock.Lock()
 		defer lock.Unlock()
-		// Second existential check in case env was initialized befor the lock was aquired.
+		// Second existential check in case env was initialized before the lock was aquired.
 		if env == nil {
 			log.Println("Enivironment uninitialized, loading environment variables from .env file")
 			var err error
@@ -36,14 +37,22 @@ func GetEnvironment(load ...func(...string) error) *Environment {
 			} else if len(load) == 1 {
 				err = load[0](".env")
 			} else {
-				panic("Too many arguments passed to GetEnvironment, expected 1")
+				log.Panic("Too many arguments passed to GetEnvironment, expected 1")
 			}
 			if err != nil {
-				log.Fatal("Error loading .env file, falling back to environment variables")
+				log.Panic("Error loading .env file")
 			}
+
+			verificationRedirectUrl, ok := os.LookupEnv("EMAIL_VERIFICATION_REDIRECT_URL")
+
+			if !ok {
+				log.Panicf("Missing required environment variable EMAIL_VERIFICATION_REDIRECT_URL")
+			}
+
 			env = &Environment{
-				MongoConfig: loadMongoVars(),
-				SmtpConfig:  loadSmtpVars(),
+				MongoConfig:                  loadMongoVars(),
+				SmtpConfig:                   loadSmtpVars(),
+				EmailVerificationRedirectUrl: verificationRedirectUrl,
 			}
 		}
 	}
@@ -83,16 +92,21 @@ func loadMongoVars() *MongoClientConfig {
 }
 
 type SmtpClientConfig struct {
-	Username string
-	Password string
-	Host     string
-	Port     uint16
+	Username    string
+	DisplayName string
+	Password    string
+	Host        string
+	Port        uint16
 }
 
 func loadSmtpVars() *SmtpClientConfig {
 	smtpUserName, ok := os.LookupEnv("SMTP_USERNAME")
 	if !ok {
 		log.Panic("Missing required environment variable SMTP_USERNAME")
+	}
+	smtpDisplayName, ok := os.LookupEnv("SMTP_DISPLAY_NAME")
+	if !ok {
+		log.Panic("Missing required environment variable SMTP_DISPLAY_NAME")
 	}
 	smtpPassword, ok := os.LookupEnv("SMTP_PASSWORD")
 	if !ok {
@@ -112,9 +126,10 @@ func loadSmtpVars() *SmtpClientConfig {
 	}
 
 	return &SmtpClientConfig{
-		Username: smtpUserName,
-		Password: smtpPassword,
-		Host:     smtpHost,
-		Port:     uint16(smtpPortParsed),
+		Username:    smtpUserName,
+		DisplayName: smtpDisplayName,
+		Password:    smtpPassword,
+		Host:        smtpHost,
+		Port:        uint16(smtpPortParsed),
 	}
 }

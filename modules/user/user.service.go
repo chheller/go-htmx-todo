@@ -1,10 +1,14 @@
 package user
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
+	"log"
 	"time"
 
+	"github.com/chheller/go-htmx-todo/modules/config"
 	smtp "github.com/chheller/go-htmx-todo/modules/email"
 	"github.com/chheller/go-htmx-todo/modules/event"
 	"github.com/google/uuid"
@@ -16,7 +20,11 @@ type UserService struct {
 	Ctx    context.Context
 }
 
-func (svc *UserService) CreateUser(user User) {
+type VerifyEmailData struct {
+	RedirectUrl string
+}
+
+func (svc *UserService) CreateUser(user User) error {
 	userCollection := svc.Client.Database("go-todo-htmx").Collection("user")
 	userCreatedEvent := UserCreated{
 		Email:  user.Email,
@@ -29,12 +37,29 @@ func (svc *UserService) CreateUser(user User) {
 	if err != nil {
 		panic(err)
 	}
+
 	// Fire off an email without blocking the request
 	// TODO: Error handling- maybe emit an event indicating verification email failed
-	// TODO: Send a login/verification token
 	go func() {
-		smtp.SendEmail(user.Email, "Welcome to Go Todo", fmt.Sprintf("Welcome to Go Todo, %s", user.Email))
+		// TODO: Make a meaningful token
+		redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, uuid.New())
+		template, err := template.ParseFiles("modules/user/templates/verify_email_template.tmpl")
+		// TODO: Error handling- maybe emit an event indicating verification email failed
+
+		if err != nil {
+			log.Printf("error parsing email template, %s", err)
+			return
+		}
+		var emailBodyBytes bytes.Buffer
+		err = template.ExecuteTemplate(&emailBodyBytes, "verify_email_template.tmpl", VerifyEmailData{RedirectUrl: redirectUrl})
+		if err != nil {
+			log.Print("error executing email template")
+			return
+		}
+		emailBodyString := emailBodyBytes.String()
+		smtp.SendEmail(user.Email, "Verify Email", emailBodyString)
 	}()
 
 	fmt.Println("Inserted a single document: ", res.InsertedID)
+	return nil
 }

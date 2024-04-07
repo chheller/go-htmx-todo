@@ -9,14 +9,18 @@ import (
 )
 
 // TODO: Refactor this to use a goroutine-safe singleton Client reference.
-func SendEmail(to string, subject string, body string) {
+func SendEmail(to string, subject string, body string) error {
 	env := config.GetEnvironment().SmtpConfig
 	auth := smtp.PlainAuth("", env.Username, env.Password, env.Host)
 	srvr := fmt.Sprintf("%s:%d", env.Host, env.Port)
-	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n%s", to, subject, body))
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n"
+	from := env.DisplayName
+	msg := []byte(fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n%s\r\n%s", from, to, subject, mime, body))
 
 	err := smtp.SendMail(srvr, auth, env.Username, []string{to}, msg)
 	if err != nil {
-		log.Panicf("Error sending email %s", err)
+		log.Printf("Error sending email %s", err)
+		return err
 	}
+	return nil
 }
