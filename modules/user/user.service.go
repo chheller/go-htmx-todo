@@ -9,9 +9,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
-	"log"
 	"math/big"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chheller/go-htmx-todo/modules/config"
 	smtp "github.com/chheller/go-htmx-todo/modules/email"
@@ -19,6 +20,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserService struct {
@@ -30,41 +32,60 @@ type VerifyEmailData struct {
 	RedirectUrl string
 }
 
-func (svc *UserService) VerifyUserOtp(token string) (ok bool) {
+var token_filter_event_type = bson.M{"$or": &[]string{"EmailOtpIssued", "EmailOtpRevoked"}}
+
+func (svc *UserService) VerifyUserOtp(token string) bool {
 	userCollection := svc.Client.Database("go-todo-htmx").Collection("user")
+	log.WithField("token", token).Debug("Verifying token")
 	mac := hmac.New(sha256.New, []byte("secret"))
 	bytesWritten, err := mac.Write([]byte(token))
 	if err != nil {
-		return
+		log.WithField("error", err).Error("Failed to hash token")
+		return false
 	}
 	if bytesWritten != len(token) {
-		err = fmt.Errorf("error hashing token")
-		return
+		log.WithField("error", err).Error("Failed to write complete bytes to hash")
+		return false
 	}
 	tokenHash := hex.EncodeToString(mac.Sum(nil))
 
-	var emailOtpIssued EmailOtpIssued
-	var emailOtpRevoked EmailOtpRevoked
+	query := userCollection.FindOne(
+		svc.Ctx,
+		bson.M{
+			"verificationtoken": tokenHash,
+			"event.type":        token_filter_event_type,
+			"expiresat":         bson.M{"$gt": time.Now()},
+		},
+		options.FindOne().SetSort(bson.M{"_id": -1}),
+	)
 
-	err = userCollection.FindOne(svc.Ctx, bson.M{"verificationtoken": tokenHash, "event.type": "EmailOtpIssued", "expiresat": bson.M{"$gt": time.Now()}}).Decode(&emailOtpIssued)
-	if err != nil {
-		// TODO: Check if the error is no docs found, return a 404
-		log.Print("Did not find any matching Verification Token")
-		return
-	}
-	// TODO: Handle better token already used error
-	err = userCollection.FindOne(svc.Ctx, bson.M{"verificationtoken": tokenHash, "event.type": "EmailOtpRevoked"}).Decode(&emailOtpRevoked)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			ok = true
-			err = nil // nil out err, as not finding a revoked event is actually a success state for verification
-			userCollection.InsertOne(svc.Ctx, EmailOtpRevoked{Event: event.Event{Timestamp: time.Now(), Type: "EmailOtpRevoked"}, UserId: emailOtpIssued.UserId, VerificationToken: tokenHash})
-			return
+	var emailOtpRevoked EmailOtpRevoked
+	err = query.Decode(&emailOtpRevoked)
+	if err == mongo.ErrNoDocuments {
+		var emailOtpIssued EmailOtpIssued
+		err = query.Decode(&emailOtpIssued)
+		if err == nil {
+			res, err := userCollection.InsertOne(
+				svc.Ctx,
+				EmailOtpRevoked{
+					Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpRevoked"},
+					UserId:            emailOtpIssued.UserId,
+					VerificationToken: tokenHash,
+				},
+			)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err, "event": emailOtpIssued}).Error("Failed to revoke email otp")
+			}
+			log.WithField("result", res).Debug("Succesfully revoked email otp")
+			return true
 		}
-		return
+		log.WithField("error", err).Error("Error fetching email otp event")
+		return false
 	}
-	return
+	log.WithField("error", err).Error("Error fetching email otp revoked event")
+	return false
 }
+
 func (svc *UserService) CreateUser(user User) error {
 	userCollection := svc.Client.Database("go-todo-htmx").Collection("user")
 	userCreatedEvent := UserCreated{

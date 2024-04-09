@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/joho/godotenv"
 )

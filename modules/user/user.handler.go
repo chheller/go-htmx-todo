@@ -2,8 +2,9 @@ package user
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type UserHandlers struct {

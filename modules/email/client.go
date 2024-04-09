@@ -2,8 +2,9 @@ package smtp
 
 import (
 	"fmt"
-	"log"
 	"net/smtp"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chheller/go-htmx-todo/modules/config"
 )
