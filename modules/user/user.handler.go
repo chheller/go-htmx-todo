@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/chheller/go-htmx-todo/modules/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,7 +13,7 @@ type UserHandlers struct {
 }
 
 // Entry point for /user routes. Configures handlers for the given router
-func (uh *UserHandlers) InitializeHandlers(router *http.ServeMux) {
+func (uh UserHandlers) Init(router *http.ServeMux) types.Handler {
 	if uh.UserService == nil {
 		panic("UserService must be initialized before calling InitializeHandlers")
 	}
@@ -20,6 +21,8 @@ func (uh *UserHandlers) InitializeHandlers(router *http.ServeMux) {
 	router.HandleFunc("POST /user", uh.handleCreateUser)
 	router.HandleFunc("PUT /user", uh.handleUpdateUser)
 	router.HandleFunc("GET /user/verify-otp", uh.handleVerifyUserOtp)
+
+	return uh
 }
 
 func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Request) {

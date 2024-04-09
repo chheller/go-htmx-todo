@@ -18,6 +18,8 @@ import (
 )
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{})
+	log.SetLevel(log.DebugLevel)
 	//Create a channel to recieve shutdown signals.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
