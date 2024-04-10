@@ -60,8 +60,16 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 
 }
 
+// TODO: Move this and initialize it for every page to pull in
+type BasePageData struct {
+	Title   string
+	DevMode bool
+}
+
 func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
 	templates := web.GetTemplates()
-	log.WithField("Templates", templates.Tree).Info("Templates")
-	templates.ExecuteTemplate(res, "pages/signup", nil)
+	templates.ExecuteTemplate(res, "pages/signup", &BasePageData{
+		Title:   "Sign Up",
+		DevMode: true,
+	})
 }
