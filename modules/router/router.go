@@ -2,11 +2,15 @@ package router
 
 import (
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/chheller/go-htmx-todo/modules/domain"
 	"github.com/chheller/go-htmx-todo/modules/user"
 	"github.com/chheller/go-htmx-todo/modules/web"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/websocket"
 )
 
 // CreateRouter creates a new http.ServeMux and initializes the http handlers.
@@ -20,11 +24,22 @@ func CreateRouter(services *ApplicationServices) *http.ServeMux {
 	if err != nil {
 		log.WithError(err).Panic("Failed to create sub filesytem for static files")
 	}
-
 	staticFileServer := http.FileServer(http.FS(static))
-	log.Println("Serving static files")
-	router.Handle("/static/", staticFileServer)
+	router.Handle("/static/", http.StripPrefix("/static/", staticFileServer))
 
+	// Add no-op websocket handler for the reloadBrowser.js functionality
+	router.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+		log.Info("Websocket connection established")
+		defer log.Info("Websocket connection closed")
+		defer ws.Close()
+
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, os.Interrupt)
+		signal.Notify(stop, syscall.SIGTERM)
+		<-stop
+	}))
+
+	// Setup application handlers
 	handlers := []domain.Handler{
 		user.UserHandlers{
 			UserService: services.UserService,

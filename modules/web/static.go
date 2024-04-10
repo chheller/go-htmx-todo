@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	//go:embed all:static
+	//go:embed static/**/*
 	StaticWebFiles embed.FS
 )
 
