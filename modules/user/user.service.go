@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"html/template"
 	"math/big"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/chheller/go-htmx-todo/modules/domain"
 	smtp "github.com/chheller/go-htmx-todo/modules/email"
 	"github.com/chheller/go-htmx-todo/modules/event"
+	"github.com/chheller/go-htmx-todo/modules/web"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -119,13 +119,13 @@ func (svc *UserService) CreateUser(user User) error {
 
 	// Fire off an email without blocking the request
 	// TODO: Error handling- maybe emit an event indicating verification email failed
-	go svc.issueEmailOtp(userCreatedEvent)
+	go svc.IssueEmailOtp(userCreatedEvent)
 
 	log.WithField("result", res).Info("Successfully created a new user")
 	return nil
 }
 
-func (svc *UserService) issueEmailOtp(userCreatedEvent *UserCreated) {
+func (svc *UserService) IssueEmailOtp(userCreatedEvent *UserCreated) {
 	tokenChallenge, tokenHash, err := createEmailOtp()
 	if err != nil {
 		log.WithField("error", err).Error("Create verification token error")
@@ -147,15 +147,8 @@ func (svc *UserService) issueEmailOtp(userCreatedEvent *UserCreated) {
 	}
 
 	redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, tokenChallenge)
-	template, err := template.ParseFiles("modules/user/templates/verify_email_template.tmpl")
-	// TODO: Error handling- maybe emit an event indicating verification email failed
-
-	if err != nil {
-		log.WithField("error", err).Error("Template parse error")
-		return
-	}
 	var emailBodyBytes bytes.Buffer
-	err = template.ExecuteTemplate(&emailBodyBytes, "verify_email_template.tmpl", VerifyEmailData{RedirectUrl: redirectUrl})
+	err = web.GetTemplates().ExecuteTemplate(&emailBodyBytes, "email/verify-new-user", VerifyEmailData{RedirectUrl: redirectUrl})
 	if err != nil {
 		log.WithField("error", err).Error("Template execution error")
 		return
