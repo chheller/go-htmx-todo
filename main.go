@@ -33,6 +33,7 @@ func main() {
 	// Create the router, delegating to modules/router/router.go for the implementation.
 	services := (router.ApplicationServices{}).Init(client, context.Background())
 	httpRouter := router.CreateRouter(&services)
+
 	srv := &http.Server{
 		Handler: httpRouter,
 		Addr:    fmt.Sprintf(":%v", 8080),
