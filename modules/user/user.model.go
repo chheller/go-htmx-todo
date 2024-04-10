@@ -52,3 +52,7 @@ type EmailOtpRevoked struct {
 	UserId            uuid.UUID
 	VerificationToken string
 }
+
+type VerifyEmailData struct {
+	RedirectUrl string
+}

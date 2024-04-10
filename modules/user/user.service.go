@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"html/template"
 	"math/big"
@@ -16,9 +15,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/chheller/go-htmx-todo/modules/config"
+	"github.com/chheller/go-htmx-todo/modules/domain"
 	smtp "github.com/chheller/go-htmx-todo/modules/email"
 	"github.com/chheller/go-htmx-todo/modules/event"
-	"github.com/chheller/go-htmx-todo/modules/types"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,15 +30,11 @@ type UserService struct {
 	collection *mongo.Collection
 }
 
-func (svc UserService) Init(client *mongo.Client, ctx context.Context) types.Service {
+func (svc UserService) Init(client *mongo.Client, ctx context.Context) *UserService {
 	svc.client = client
 	svc.ctx = ctx
 	svc.collection = client.Database("go-todo-htmx").Collection("user")
 	return &svc
-}
-
-type VerifyEmailData struct {
-	RedirectUrl string
 }
 
 func (svc *UserService) VerifyUserOtp(token string) bool {
@@ -106,7 +101,7 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	return false
 }
 
-var UserInsertError = errors.New("Failed to insert user")
+var ErrUserInsert = fmt.Errorf("%w:%s", domain.ErrorApplicationGeneric, "failed to insert user")
 
 func (svc *UserService) CreateUser(user User) error {
 	log.WithField("user", user).Info("Creating new user")
@@ -119,7 +114,7 @@ func (svc *UserService) CreateUser(user User) error {
 	res, err := svc.collection.InsertOne(svc.ctx, userCreatedEvent)
 
 	if err != nil {
-		return fmt.Errorf("%w:%s", UserInsertError, err)
+		return fmt.Errorf("%w:%s", ErrUserInsert, err)
 	}
 
 	// Fire off an email without blocking the request
@@ -136,7 +131,9 @@ func (svc *UserService) issueEmailOtp(userCreatedEvent *UserCreated) {
 		log.WithField("error", err).Error("Create verification token error")
 		return
 	}
+
 	log.WithFields(log.Fields{"tokenHash": tokenHash}).Debug("Created email verification token")
+
 	_, err = svc.collection.InsertOne(svc.ctx, EmailOtpIssued{
 		Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpIssued"},
 		UserId:            userCreatedEvent.UserId,

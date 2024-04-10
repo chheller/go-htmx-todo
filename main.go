@@ -20,6 +20,7 @@ import (
 func main() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.DebugLevel)
+
 	//Create a channel to recieve shutdown signals.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -27,10 +28,11 @@ func main() {
 
 	//Connect to the database, and defer closing the connection.
 	client := database.GetMongoClient()
-	defer CloseDb(client)
+	defer closeDb(client)
 
 	// Create the router, delegating to modules/router/router.go for the implementation.
-	httpRouter := router.CreateRouter(client)
+	services := (router.ApplicationServices{}).Init(client, context.Background())
+	httpRouter := router.CreateRouter(&services)
 	srv := &http.Server{
 		Handler: httpRouter,
 		Addr:    fmt.Sprintf(":%v", 8080),
@@ -57,7 +59,7 @@ func main() {
 	}
 }
 
-func CloseDb(client *mongo.Client) {
+func closeDb(client *mongo.Client) {
 	if err := client.Disconnect(context.Background()); err != nil {
 		log.Printf("err closing db connection %s", err)
 	} else {
