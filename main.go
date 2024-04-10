@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
@@ -65,4 +66,11 @@ func closeDb(client *mongo.Client) {
 	} else {
 		log.Println("db connection gracefully closed")
 	}
+}
+
+func parseTemplates() (t *template.Template) {
+	t = template.Must(template.ParseGlob("./modules/web/templates/*.go.tmpl"))
+	t = template.Must(t.ParseGlob("./modules/web/templates/components/*.go.tmpl"))
+	t = template.Must(t.ParseGlob("./modules/web/templates/pages/*.go.tmpl"))
+	return
 }

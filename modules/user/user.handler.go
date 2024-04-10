@@ -18,9 +18,10 @@ func (uh UserHandlers) Init(router *http.ServeMux) domain.Handler {
 		panic("UserService must be initialized before calling InitializeHandlers")
 	}
 	router.HandleFunc("GET /user", uh.handleGetUser)
-	router.HandleFunc("POST /user", uh.handleCreateUser)
+	router.Handle("GET Content-Accept:text/html /signup", uh.handleGetUserPage)
+	router.HandleFunc("POST /signup", uh.handleCreateUser)
 	router.HandleFunc("PUT /user", uh.handleUpdateUser)
-	router.HandleFunc("GET /user/verify-otp", uh.handleVerifyUserOtp)
+	router.HandleFunc("GET /signup/verify", uh.handleVerifyUserOtp)
 
 	return uh
 }
@@ -56,4 +57,8 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte("OK"))
 
+}
+
+func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("GET /signup"))
 }
