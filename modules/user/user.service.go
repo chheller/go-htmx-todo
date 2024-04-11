@@ -149,6 +149,7 @@ func (svc *UserService) InsertEmailOtp(userId uuid.UUID, tokenChallenge string, 
 		log.WithField("error", err).Error("Insert OTP Error")
 		return err
 	}
+	return nil
 }
 
 func (svc *UserService) IssueEmailOtp(email string, tokenChallenge string) {
