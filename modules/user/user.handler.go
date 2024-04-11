@@ -37,7 +37,7 @@ func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Reque
 func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Request) {
 	token := req.URL.Query().Get("token")
 	if token == "" {
-		log.Print("token param not found in query params")
+		log.Info("token param not found in query params")
 		res.WriteHeader(http.StatusBadRequest)
 		res.Write([]byte("Invalid token"))
 		return
@@ -53,16 +53,11 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 
 }
 func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
-	err := web.Templates.RenderTemplate(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
-	if err != nil {
-		log.WithError(err).Error("Failed to render template")
-	}
+	web.Templates.WriteTemplateResponse(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
+
 }
 
 func (u *UserHandlers) handleGetHomePage(res http.ResponseWriter, req *http.Request) {
-	err := web.Templates.RenderTemplate(res, "/pages", "base_page", viewmodel.DefaultBasePageData)
-	if err != nil {
-		log.WithError(err).Error("Failed to render template")
+	web.Templates.WriteTemplateResponse(res, "/pages", "base_page", viewmodel.DefaultBasePageData)
 
-	}
 }
