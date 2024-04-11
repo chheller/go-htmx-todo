@@ -6,6 +6,7 @@ import (
 	"github.com/chheller/go-htmx-todo/modules/domain"
 	"github.com/chheller/go-htmx-todo/modules/user"
 	"github.com/chheller/go-htmx-todo/modules/web"
+	viewmodel "github.com/chheller/go-htmx-todo/modules/web/view_model"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,18 +26,17 @@ func (wph WebPageHandlers) Init(router *http.ServeMux) domain.Handler {
 }
 
 func (wph *WebPageHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
-	err := web.New().RenderTemplate(res, "/pages", "user_signup", &user.BasePageData{
-		Title:   "Sign Up",
-		DevMode: true,
-	})
-	logrus.WithError(err).Error("Failed to render template")
+	err := web.Templates.RenderTemplate(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to render template")
+	}
 }
 
 func (wph *WebPageHandlers) handleGetHomePage(res http.ResponseWriter, req *http.Request) {
-	err := web.New().RenderTemplate(res, "/pages", "base_page", &user.BasePageData{
-		DevMode: true,
-	})
+	err := web.Templates.RenderTemplate(res, "/pages", "base_page", viewmodel.DefaultBasePageData)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to render template")
 
-	logrus.WithError(err).Error("Failed to render template")
+	}
 
 }

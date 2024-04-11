@@ -15,6 +15,7 @@ type Environment struct {
 	MongoConfig                  *MongoClientConfig
 	SmtpConfig                   *SmtpClientConfig
 	EmailVerificationRedirectUrl string
+	InjectBrowserReload          bool
 }
 type EnvironmentLoader interface {
 	Load(...string) error
@@ -54,6 +55,7 @@ func GetEnvironment(load ...func(...string) error) *Environment {
 				MongoConfig:                  loadMongoVars(),
 				SmtpConfig:                   loadSmtpVars(),
 				EmailVerificationRedirectUrl: verificationRedirectUrl,
+				InjectBrowserReload:          os.Getenv("INJECT_BROWSER_RELOAD") == "true",
 			}
 		}
 	}

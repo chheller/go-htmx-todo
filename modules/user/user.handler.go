@@ -57,9 +57,3 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 	res.Write([]byte("OK"))
 
 }
-
-// TODO: Move this and initialize it for every page to pull in
-type BasePageData struct {
-	Title   string
-	DevMode bool
-}
