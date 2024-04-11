@@ -1,0 +1,15 @@
+{{template "base" .}}
+
+{{define "title"}}{{.Title}}{{end}}
+{{define "content"}}
+    <h1>Sign Up</h1>
+    <form action="/signup" method="post">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required />
+      <button type="submit">Sign Up</button>
+    </form>
+  </body>
+</html>
+{{end}}

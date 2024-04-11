@@ -2,26 +2,29 @@ package web
 
 import (
 	"embed"
-	"text/template"
+	"html/template"
+	"io"
 
 	"github.com/sirupsen/logrus"
 )
 
-//go:embed templates/**/*
+//go:embed templates/base_page.tmpl.html templates/**/*.tmpl*
 var templateFs embed.FS
-var templates *template.Template
 
-func parseTemplates() (*template.Template, error) {
-	return template.ParseFS(templateFs, "templates/*/*.go.tmpl")
+type Template struct {
+	templates *template.Template
 }
 
-func GetTemplates() *template.Template {
-	if templates == nil {
-		var err error
-		templates, err = parseTemplates()
-		if err != nil {
-			logrus.WithError(err).Panic("Failed to parse templates")
-		}
-	}
-	return templates
+func New() *Template {
+	templates := template.Must(template.ParseFS(templateFs, "templates/pages/*.tmpl*", "templates/components/*.tmpl*", "templates/email/*.tmpl*", "templates/base_page.tmpl.html"))
+	return &Template{templates: templates}
+}
+
+func (t *Template) RenderTemplate(w io.Writer, name string, data interface{}) error {
+	tmpl := template.Must(t.templates.Clone())
+	logrus.WithField("templates", tmpl.DefinedTemplates()).Debug("Loaded templates")
+
+	tmpl = template.Must(tmpl.ParseFS(templateFs, "templates/**/"+name))
+
+	return tmpl.ExecuteTemplate(w, name, data)
 }

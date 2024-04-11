@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/chheller/go-htmx-todo/modules/domain"
-	"github.com/chheller/go-htmx-todo/modules/web"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +18,6 @@ func (uh UserHandlers) Init(router *http.ServeMux) domain.Handler {
 		panic("UserService must be initialized before calling InitializeHandlers")
 	}
 	router.HandleFunc("GET /user", uh.handleGetUser)
-	router.HandleFunc("GET /signup", uh.handleGetUserPage)
 	router.HandleFunc("POST /signup", uh.handleCreateUser)
 	router.HandleFunc("PUT /user", uh.handleUpdateUser)
 	router.HandleFunc("GET /signup/verify", uh.handleVerifyUserOtp)
@@ -64,12 +62,4 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 type BasePageData struct {
 	Title   string
 	DevMode bool
-}
-
-func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
-	templates := web.GetTemplates()
-	templates.ExecuteTemplate(res, "pages/signup", &BasePageData{
-		Title:   "Sign Up",
-		DevMode: true,
-	})
 }
