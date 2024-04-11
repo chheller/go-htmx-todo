@@ -116,8 +116,16 @@ func (svc *UserService) CreateUser(user User) error {
 	if err != nil {
 		return fmt.Errorf("%w:%s", ErrUserInsert, err)
 	}
+	tokenChallenge, tokenHash, err := createEmailOtp()
+	if err != nil {
+		log.WithField("error", err).Error("Create verification token error")
+		return err
+	}
 
-	tokenChallenge, _, err := svc.InsertEmailOtp(userCreatedEvent.UserId)
+	err = svc.InsertEmailOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash)
+	if err != nil {
+		return err
+	}
 	// Fire off an email without blocking the request
 	// TODO: Error handling- maybe emit an event indicating verification email failed
 	go svc.IssueEmailOtp(user.Email, tokenChallenge)
@@ -126,16 +134,11 @@ func (svc *UserService) CreateUser(user User) error {
 	return nil
 }
 
-func (svc *UserService) InsertEmailOtp(userId uuid.UUID) (tokenChallenge string, tokenHash string, err error) {
-	tokenChallenge, tokenHash, err = createEmailOtp()
-	if err != nil {
-		log.WithField("error", err).Error("Create verification token error")
-		return
-	}
+func (svc *UserService) InsertEmailOtp(userId uuid.UUID, tokenChallenge string, tokenHash string) error {
 
 	log.WithFields(log.Fields{"tokenHash": tokenHash}).Debug("Created email verification token")
 
-	_, err = svc.collection.InsertOne(svc.ctx, EmailOtpIssued{
+	_, err := svc.collection.InsertOne(svc.ctx, EmailOtpIssued{
 		Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpIssued"},
 		UserId:            userId,
 		VerificationToken: tokenHash,
@@ -144,9 +147,8 @@ func (svc *UserService) InsertEmailOtp(userId uuid.UUID) (tokenChallenge string,
 	})
 	if err != nil {
 		log.WithField("error", err).Error("Insert OTP Error")
-		return
+		return err
 	}
-	return
 }
 
 func (svc *UserService) IssueEmailOtp(email string, tokenChallenge string) {
