@@ -1,4 +1,5 @@
-{{define "base"}}
+{{define
+   "base"}}
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,16 +7,22 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {{$cacheDisabled := true}} {{if $cacheDisabled}}
+    {{$cacheDisabled := true}}
+    {{if $cacheDisabled}}
     <meta
       http-equiv="Cache-Control"
       content="no-cache, no-store, must-revalidate"
     />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    {{end}} {{end}}
+    {{
+      end
+    }}
+    {{
+      end
+    }}
 
-    <title>{{block "title" .}} {{.Title}} {{end}}</title>
+    <title>{{block "title" .}} {{or .Title "Go HTMX Todo"}} {{ end }}</title>
 
     {{block "css" .}}
     <link
@@ -30,16 +37,24 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css"
       rel="stylesheet"
     />
-    {{end}} {{block "js" .}} {{if .DevMode}}
+    {{
+      end
+    }}
+    {{block "js" .}}
+    {{if .DevMode}}
     <script src="../static/js/reloadBrowser.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8"></script>
     {{else}}
     <script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8"></script>
-    {{end}}
+    {{
+      end
+    }}
     <script src="https://cdn.tailwindcss.com"></script>
-    {{end}}
+    {{
+      end
+    }}
   </head>
 
   <body>
@@ -47,23 +62,16 @@
     <header class="bg-gray-800 text-white text-left p-4">
       <p>Menu</p>
     </header>
-    {{end}} {{block "content" .}}
-    <div class="container mx-auto">
-      <div class="flex justify-center items-center h-screen">
-        <div class="text-center">
-          <h1 class="text-4xl font-bold">Go HTMX Todo</h1>
-          <p class="text-gray-500">A simple todo app built with Go and HTMX</p>
-        </div>
-      </div>
-    </div>
-    {{end}} {{block "footer" .}}
+    {{ end }} {{block "content" .}}
+
+    {{ end }} {{block "footer" .}}
     <footer
       class="bg-gray-800 text-white text-center py-4 absolute bottom-0 w-full"
     >
       <p>&copy; 2021 Go HTMX Todo</p>
     </footer>
-    {{end}}
+    {{ end }}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
   </body>
 </html>
-{{end}}
+{{ end }}

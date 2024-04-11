@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//go:embed templates/base_page.tmpl.html templates/**/*.tmpl*
+//go:embed "templates/*"
 var templateFs embed.FS
 
 type Template struct {
@@ -16,15 +16,15 @@ type Template struct {
 }
 
 func New() *Template {
-	templates := template.Must(template.ParseFS(templateFs, "templates/pages/*.tmpl*", "templates/components/*.tmpl*", "templates/email/*.tmpl*", "templates/base_page.tmpl.html"))
+	templates := template.Must(template.ParseFS(templateFs, "templates/*/*.html"))
 	return &Template{templates: templates}
 }
 
-func (t *Template) RenderTemplate(w io.Writer, name string, data interface{}) error {
+func (t *Template) RenderTemplate(w io.Writer, pathPrefix string, name string, data interface{}) error {
 	tmpl := template.Must(t.templates.Clone())
-	logrus.WithField("templates", tmpl.DefinedTemplates()).Debug("Loaded templates")
+	logrus.WithFields(logrus.Fields{"templates": tmpl.DefinedTemplates(), "page": "templates/" + name}).Debug("Executing template for page")
 
-	tmpl = template.Must(tmpl.ParseFS(templateFs, "templates/**/"+name))
+	tmpl = template.Must(tmpl.ParseFS(templateFs, "templates"+pathPrefix+"/"+name+".html"))
 
-	return tmpl.ExecuteTemplate(w, name, data)
+	return tmpl.ExecuteTemplate(w, name+".html", data)
 }
