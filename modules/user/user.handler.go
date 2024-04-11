@@ -54,10 +54,8 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 }
 func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
 	web.Templates.WriteTemplateResponse(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
-
 }
 
 func (u *UserHandlers) handleGetHomePage(res http.ResponseWriter, req *http.Request) {
 	web.Templates.WriteTemplateResponse(res, "/pages", "base_page", viewmodel.DefaultBasePageData)
-
 }

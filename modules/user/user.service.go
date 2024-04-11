@@ -117,16 +117,17 @@ func (svc *UserService) CreateUser(user User) error {
 		return fmt.Errorf("%w:%s", ErrUserInsert, err)
 	}
 
+	tokenChallenge, _, err := svc.InsertEmailOtp(userCreatedEvent.UserId)
 	// Fire off an email without blocking the request
 	// TODO: Error handling- maybe emit an event indicating verification email failed
-	go svc.IssueEmailOtp(userCreatedEvent)
+	go svc.IssueEmailOtp(user.Email, tokenChallenge)
 
 	log.WithField("result", res).Info("Successfully created a new user")
 	return nil
 }
 
-func (svc *UserService) IssueEmailOtp(userCreatedEvent *UserCreated) {
-	tokenChallenge, tokenHash, err := createEmailOtp()
+func (svc *UserService) InsertEmailOtp(userId uuid.UUID) (tokenChallenge string, tokenHash string, err error) {
+	tokenChallenge, tokenHash, err = createEmailOtp()
 	if err != nil {
 		log.WithField("error", err).Error("Create verification token error")
 		return
@@ -136,7 +137,7 @@ func (svc *UserService) IssueEmailOtp(userCreatedEvent *UserCreated) {
 
 	_, err = svc.collection.InsertOne(svc.ctx, EmailOtpIssued{
 		Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpIssued"},
-		UserId:            userCreatedEvent.UserId,
+		UserId:            userId,
 		VerificationToken: tokenHash,
 		IssuedAt:          time.Now(),
 		ExpiresAt:         time.Now().Add(time.Hour * 24),
@@ -145,16 +146,20 @@ func (svc *UserService) IssueEmailOtp(userCreatedEvent *UserCreated) {
 		log.WithField("error", err).Error("Insert OTP Error")
 		return
 	}
+	return
+}
+
+func (svc *UserService) IssueEmailOtp(email string, tokenChallenge string) {
 
 	redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, tokenChallenge)
 	var emailBodyBytes bytes.Buffer
-	err = web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification", VerifyEmailData{RedirectUrl: redirectUrl})
+	err := web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification", VerifyEmailData{RedirectUrl: redirectUrl})
 	if err != nil {
 		log.WithField("error", err).Error("Template execution error")
 		return
 	}
 	emailBodyString := emailBodyBytes.String()
-	if err = smtp.SendEmail(userCreatedEvent.Email, "Verify Email", emailBodyString); err != nil {
+	if err = smtp.SendEmail(email, "Verify Email", emailBodyString); err != nil {
 		log.WithField("error", err).Error("Send OTP Email error")
 		return
 	}
