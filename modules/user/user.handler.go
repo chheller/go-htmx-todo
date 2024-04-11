@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/chheller/go-htmx-todo/modules/domain"
+	"github.com/chheller/go-htmx-todo/modules/web"
+	viewmodel "github.com/chheller/go-htmx-todo/modules/web/view_model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,9 +19,9 @@ func (uh UserHandlers) Init(router *http.ServeMux) domain.Handler {
 	if uh.UserService == nil {
 		panic("UserService must be initialized before calling InitializeHandlers")
 	}
-	router.HandleFunc("GET /user", uh.handleGetUser)
+	router.HandleFunc("GET /signup", uh.handleGetUserPage)
 	router.HandleFunc("POST /signup", uh.handleCreateUser)
-	router.HandleFunc("PUT /user", uh.handleUpdateUser)
+	router.HandleFunc("GET /home", uh.handleGetHomePage)
 	router.HandleFunc("GET /signup/verify", uh.handleVerifyUserOtp)
 
 	return uh
@@ -30,13 +32,6 @@ func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Reque
 	json.NewDecoder(req.Body).Decode(user)
 	u.UserService.CreateUser(*user)
 	res.Write([]byte("POST /user"))
-}
-func (u *UserHandlers) handleUpdateUser(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("PUT /user"))
-}
-
-func (u *UserHandlers) handleGetUser(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("GET /user"))
 }
 
 func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Request) {
@@ -56,4 +51,18 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte("OK"))
 
+}
+func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
+	err := web.Templates.RenderTemplate(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
+	if err != nil {
+		log.WithError(err).Error("Failed to render template")
+	}
+}
+
+func (u *UserHandlers) handleGetHomePage(res http.ResponseWriter, req *http.Request) {
+	err := web.Templates.RenderTemplate(res, "/pages", "base_page", viewmodel.DefaultBasePageData)
+	if err != nil {
+		log.WithError(err).Error("Failed to render template")
+
+	}
 }

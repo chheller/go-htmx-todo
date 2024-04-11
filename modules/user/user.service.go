@@ -148,7 +148,7 @@ func (svc *UserService) IssueEmailOtp(userCreatedEvent *UserCreated) {
 
 	redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, tokenChallenge)
 	var emailBodyBytes bytes.Buffer
-	err = web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification.gohtml", VerifyEmailData{RedirectUrl: redirectUrl})
+	err = web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification", VerifyEmailData{RedirectUrl: redirectUrl})
 	if err != nil {
 		log.WithField("error", err).Error("Template execution error")
 		return

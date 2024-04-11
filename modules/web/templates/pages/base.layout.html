@@ -35,24 +35,32 @@
     {{ end }}
     <script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     {{ end }}
   </head>
 
-  <body>
-    {{block "header" .}}
-    <header class="bg-gray-800 text-white text-left p-4">
-      <p>Menu</p>
-    </header>
-    {{ end }} {{block "content" .}} {{ end }} {{block "footer" .}}
-    <footer
-      class="bg-gray-800 text-white text-center py-4 absolute bottom-0 w-full"
-    >
-      <p>&copy; 2021 Go HTMX Todo</p>
-    </footer>
-    {{ end }}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+  <body class="h-full p-0 m-0 box-border">
+    <div class="min-h-full flex flex-col box-border">
+      {{block "header" .}}
+      <header
+        class="bg-gray-800 text-white text-left p-4 flex-shrink-0 flex-grow-0"
+      >
+        <p>Menu</p>
+      </header>
+      {{ end }}
+      <div class="flex-grow">
+        {{block "content" .}} {{ end }} {{block "footer" .}}
+      </div>
+      <footer
+        class="bg-gray-800 text-white text-center py-4 flex-shrink-0 flex-grow-0"
+      >
+        <p>&copy; 2021 Go HTMX Todo</p>
+      </footer>
+      {{ end }}
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    </div>
   </body>
 </html>
 {{ end }}

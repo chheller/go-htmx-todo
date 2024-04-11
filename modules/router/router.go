@@ -9,7 +9,6 @@ import (
 	"github.com/chheller/go-htmx-todo/modules/domain"
 	"github.com/chheller/go-htmx-todo/modules/user"
 	"github.com/chheller/go-htmx-todo/modules/web"
-	webhandlers "github.com/chheller/go-htmx-todo/modules/web/handler"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -43,9 +42,6 @@ func CreateRouter(services *ApplicationServices) *http.ServeMux {
 	// Setup application handlers
 	handlers := []domain.Handler{
 		user.UserHandlers{
-			UserService: services.UserService,
-		},
-		webhandlers.WebPageHandlers{
 			UserService: services.UserService,
 		},
 	}
