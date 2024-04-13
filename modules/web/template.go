@@ -3,10 +3,12 @@ package web
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 
+	"github.com/chheller/go-htmx-todo/modules/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,7 +43,13 @@ func (t *Template) WriteTemplateResponse(w http.ResponseWriter, pathPrefix strin
 	if err != nil {
 		logrus.WithError(err).Error("Failed to render template")
 		w.WriteHeader(http.StatusInternalServerError)
-		t.RenderTemplate(w, "/pages", "error_500_page", nil)
+		t.RenderTemplate(w, "/pages", "error_500_page", struct {
+			ErrorMsg            string
+			HttpPrintDebugError bool
+		}{
+			ErrorMsg:            fmt.Sprintf("Failed to render template: \n%v", err),
+			HttpPrintDebugError: config.GetEnvironment().ApplicationConfiguration.HttpPrintDebugError,
+		})
 		return
 	}
 

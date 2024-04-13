@@ -1,8 +1,9 @@
-{{template "base" .}} {{define "title"}}{{.Title}}{{end}} {{define "content"}}
+{{template "base" .}} {{define "title"}}{{.Title}}{{end}}{{define "content"}}
 
 <div class="container mx-auto">
   <div class="flex justify-center items-center h-screen">
     <div class="w-1/2" id="form">
+      {{.REQUIRED}}
       <form
         hx-target="#form"
         hx-post="/signup"

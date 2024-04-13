@@ -33,7 +33,7 @@ type User struct {
 	Email string
 }
 
-type EmailOtpIssued struct {
+type OtpIssued struct {
 	Event             event.Event
 	UserId            uuid.UUID
 	VerificationToken string
@@ -41,13 +41,13 @@ type EmailOtpIssued struct {
 	ExpiresAt         time.Time
 }
 
-type EmailOtpVerified struct {
+type OtpVerified struct {
 	Event             event.Event
 	UserId            uuid.UUID
 	VerificationToken string
 }
 
-type EmailOtpRevoked struct {
+type OtpRevoked struct {
 	Event             event.Event
 	UserId            uuid.UUID
 	VerificationToken string
@@ -56,3 +56,14 @@ type EmailOtpRevoked struct {
 type VerifyEmailData struct {
 	RedirectUrl string
 }
+
+const (
+	OtpIssuedEvent     = "OtpIssued"
+	OtpVerifiedEvent   = "OtpVerified"
+	OtpRevokedEvent    = "OtpRevoked"
+	UserCreatedEvent   = "UserCreated"
+	UserUpdatedEvent   = "UserUpdated"
+	UserDeletedEvent   = "UserDeleted"
+	UserLoggedInEvent  = "UserLoggedIn"
+	UserLoggedOutEvent = "UserLoggedOut"
+)

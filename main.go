@@ -12,6 +12,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/chheller/go-htmx-todo/modules/config"
 	"github.com/chheller/go-htmx-todo/modules/database"
 	"github.com/chheller/go-htmx-todo/modules/router"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,7 +20,7 @@ import (
 
 func main() {
 	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(config.GetEnvironment().ApplicationConfiguration.LogLevel)
 
 	//Create a channel to recieve shutdown signals.
 	stop := make(chan os.Signal, 1)
@@ -36,7 +37,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: httpRouter,
-		Addr:    fmt.Sprintf(":%v", 8080),
+		Addr:    fmt.Sprintf(":%v", config.GetEnvironment().ApplicationConfiguration.Port),
 	}
 	// Run the server in a never ending goroutine.
 	go func() {

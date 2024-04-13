@@ -5,5 +5,10 @@
     <p class="text-gray-600">Oops! Something went wrong on our server.</p>
     <p class="text-gray-600">Please try again later.</p>
   </div>
+  {{if .HttpPrintDebugError}}
+  <div class="bg-white p-8 rounded shadow ml-4">
+    <h1 class="text-4xl font-bold mb-4">Error Msg</h1>
+    <p class="text-gray-600">{{.ErrorMsg}}{{end}}</p>
+  </div>
+  {{end}}
 </div>
-{{end}}

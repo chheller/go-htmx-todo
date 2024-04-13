@@ -43,11 +43,11 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	mac := hmac.New(sha256.New, []byte("secret"))
 	bytesWritten, err := mac.Write([]byte(token))
 	if err != nil {
-		log.WithField("error", err).Error("Failed to hash token")
+		log.WithError(err).Error("Failed to hash token")
 		return false
 	}
 	if bytesWritten != len(token) {
-		log.WithField("error", err).Error("Failed to write complete bytes to hash")
+		log.WithError(err).Error("Failed to write complete bytes to hash")
 		return false
 	}
 
@@ -59,20 +59,20 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 			"verificationtoken": tokenHash,
 			"$or": bson.A{
 				bson.M{
-					"event.type": "EmailOtpIssued",
+					"event.type": OtpIssuedEvent,
 					"expiresat":  bson.M{"$gt": time.Now()},
 				},
-				bson.M{"event.type": "EmailOtpRevoked"}},
+				bson.M{"event.type": OtpRevokedEvent}},
 		},
 		options.FindOne().SetSort(bson.M{"_id": -1}).SetProjection(bson.D{{"event", 1}, {"userid", 1}}),
 	)
 
 	// This only sorta works because the Revoked and Issued events have a common structure
 	// TODO: Figure out a better way to handle decoding into a common struct
-	var emailOtpEvent EmailOtpIssued
+	var emailOtpEvent OtpIssued
 	err = query.Decode(&emailOtpEvent)
 	if err != nil {
-		log.WithField("error", err).Error("Error fetching email otp event")
+		log.WithError(err).Error("Error fetching email otp event")
 		return false
 
 	}
@@ -85,8 +85,8 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	if err == nil {
 		res, err := svc.collection.InsertOne(
 			svc.ctx,
-			EmailOtpRevoked{
-				Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpRevoked"},
+			OtpRevoked{
+				Event:             event.Event{Timestamp: time.Now(), Type: OtpRevokedEvent},
 				UserId:            emailOtpEvent.UserId,
 				VerificationToken: tokenHash,
 			},
@@ -116,54 +116,56 @@ func (svc *UserService) CreateUser(user User) error {
 	if err != nil {
 		return fmt.Errorf("%w:%s", ErrUserInsert, err)
 	}
-	tokenChallenge, tokenHash, err := createEmailOtp()
+	tokenChallenge, tokenHash, err := createOtpToken()
 	if err != nil {
-		log.WithField("error", err).Error("Create verification token error")
+		log.WithError(err).Error("Create verification token error")
 		return err
 	}
-
-	err = svc.InsertEmailOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash)
+	err = svc.InsertOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash)
 	if err != nil {
 		return err
 	}
-	// Fire off an email without blocking the request
-	// TODO: Error handling- maybe emit an event indicating verification email failed
-	go svc.IssueEmailOtp(user.Email, tokenChallenge)
+	if config.GetEnvironment().SmtpConfig.Enabled {
+		// Fire off an email without blocking the request
+		// TODO: Error handling- maybe emit an event indicating verification email failed
+		go svc.SendOtpEmail(user.Email, tokenChallenge)
+	} else {
+		log.Debug("Email verification disabled")
+	}
 
 	log.WithField("result", res).Info("Successfully created a new user")
 	return nil
 }
 
-func (svc *UserService) InsertEmailOtp(userId uuid.UUID, tokenChallenge string, tokenHash string) error {
+func (svc *UserService) InsertOtp(userId uuid.UUID, tokenChallenge string, tokenHash string) error {
 
-	log.WithFields(log.Fields{"tokenHash": tokenHash}).Debug("Created email verification token")
-
-	_, err := svc.collection.InsertOne(svc.ctx, EmailOtpIssued{
-		Event:             event.Event{Timestamp: time.Now(), Type: "EmailOtpIssued"},
+	_, err := svc.collection.InsertOne(svc.ctx, OtpIssued{
+		Event:             event.Event{Timestamp: time.Now(), Type: OtpIssuedEvent},
 		UserId:            userId,
 		VerificationToken: tokenHash,
 		IssuedAt:          time.Now(),
 		ExpiresAt:         time.Now().Add(time.Hour * 24),
 	})
+
 	if err != nil {
-		log.WithField("error", err).Error("Insert OTP Error")
+		log.WithError(err).Error("Insert OTP Error")
 		return err
 	}
 	return nil
 }
 
-func (svc *UserService) IssueEmailOtp(email string, tokenChallenge string) {
+func (svc *UserService) SendOtpEmail(email string, tokenChallenge string) {
 
 	redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, tokenChallenge)
 	var emailBodyBytes bytes.Buffer
 	err := web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification", VerifyEmailData{RedirectUrl: redirectUrl})
 	if err != nil {
-		log.WithField("error", err).Error("Template execution error")
+		log.WithError(err).Error("Template execution error")
 		return
 	}
 	emailBodyString := emailBodyBytes.String()
 	if err = smtp.SendEmail(email, "Verify Email", emailBodyString); err != nil {
-		log.WithField("error", err).Error("Send OTP Email error")
+		log.WithError(err).Error("Send OTP Email error")
 		return
 	}
 }
@@ -184,7 +186,7 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-func createEmailOtp() (tokenChallenge string, tokenHash string, err error) {
+func createOtpToken() (tokenChallenge string, tokenHash string, err error) {
 
 	tokenSize := 32
 	// TODO: Make this part of the service New function
