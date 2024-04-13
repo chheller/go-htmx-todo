@@ -5,5 +5,5 @@ import (
 )
 
 type Handler interface {
-	Init(router *http.ServeMux) Handler
+	Init(router *http.ServeMux)
 }

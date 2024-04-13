@@ -1,12 +1,12 @@
-{{template "base"}} {{define "content"}}
-<div class="flex items-center justify-center h-screen">
-  <div class="bg-white p-8 rounded shadow">
+{{template "base" .}} {{define "content"}}
+<div class="flex flex-col items-center justify-center h-screen">
+  <div class="bg-white my-4 p-8 rounded shadow max-w-lg">
     <h1 class="text-4xl font-bold mb-4">500 Internal Server Error</h1>
     <p class="text-gray-600">Oops! Something went wrong on our server.</p>
     <p class="text-gray-600">Please try again later.</p>
   </div>
   {{if .HttpPrintDebugError}}
-  <div class="bg-white p-8 rounded shadow ml-4">
+  <div class="bg-white my-4 p-8 rounded shadow ml-4 max-w-lg">
     <h1 class="text-4xl font-bold mb-4">Error Msg</h1>
     <p class="text-gray-600">{{.ErrorMsg}}{{end}}</p>
   </div>

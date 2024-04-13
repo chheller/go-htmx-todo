@@ -116,15 +116,19 @@ func (svc *UserService) CreateUser(user User) error {
 	if err != nil {
 		return fmt.Errorf("%w:%s", ErrUserInsert, err)
 	}
+
 	tokenChallenge, tokenHash, err := createOtpToken()
 	if err != nil {
 		log.WithError(err).Error("Create verification token error")
 		return err
 	}
+
 	err = svc.InsertOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash)
+
 	if err != nil {
 		return err
 	}
+
 	if config.GetEnvironment().SmtpConfig.Enabled {
 		// Fire off an email without blocking the request
 		// TODO: Error handling- maybe emit an event indicating verification email failed

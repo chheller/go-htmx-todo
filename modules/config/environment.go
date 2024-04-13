@@ -18,6 +18,12 @@ type Environment struct {
 	EmailVerificationRedirectUrl string
 	InjectBrowserReload          bool
 }
+
+func (env *Environment) String() string {
+	return fmt.Sprintf("MongoConfig: %v, SmtpConfig: %v, ApplicationConfiguration: %v, EmailVerificationRedirectUrl: %s, InjectBrowserReload: %t", env.MongoConfig, env.SmtpConfig, env.ApplicationConfiguration, env.EmailVerificationRedirectUrl, env.InjectBrowserReload)
+
+}
+
 type EnvironmentLoader interface {
 	Load(...string) error
 }
@@ -34,7 +40,7 @@ func GetEnvironment(load ...func(...string) error) *Environment {
 		defer lock.Unlock()
 		// Second existential check in case env was initialized before the lock was aquired.
 		if env == nil {
-			log.Println("Enivironment uninitialized, loading environment variables from .env file")
+			log.Info("Enivironment uninitialized, loading environment variables from .env file")
 			var err error
 			if len(load) == 0 {
 				err = godotenv.Load(".env")
@@ -69,9 +75,14 @@ func GetEnvironment(load ...func(...string) error) *Environment {
 type ApplicationConfiguration struct {
 	Port                uint32
 	LogLevel            log.Level
+	LoggerReportCaller  bool
 	HttpPrintDebugError bool
 	CookieSecret        string
 	EmailOtpSecret      string
+}
+
+func (ac *ApplicationConfiguration) String() string {
+	return fmt.Sprintf("Port: %d, LogLevel: %s, LoggerReportCaller: %t, HttpPrintDebugError: %t, CookieSecret: <masked>, EmailOtpSecret: <masked>", ac.Port, ac.LogLevel, ac.LoggerReportCaller, ac.HttpPrintDebugError)
 }
 
 // Loads general application configurations and packages them into a struct. Handles default values,
@@ -88,6 +99,9 @@ func loadApplicationConfiguration() *ApplicationConfiguration {
 			log.Panicf("LOG_LEVEL must be one of logrus.Level, got %s\nError: %v", os.Getenv("LOG_LEVEL"), err)
 		}
 	}
+	// Note: If we want to use anything outside of the default INFO level log, we need to set it immediately after loading the variable.
+	// Any log messages logged before this method is called outside of the INFO scope will be ignored
+	log.SetLevel(logLevel)
 
 	var port uint32
 	portStr, ok := os.LookupEnv("PORT")
@@ -105,6 +119,7 @@ func loadApplicationConfiguration() *ApplicationConfiguration {
 	return &ApplicationConfiguration{
 		Port:                port,
 		LogLevel:            logLevel,
+		LoggerReportCaller:  os.Getenv("LOGGER_REPORT_CALLER") == "true",
 		HttpPrintDebugError: os.Getenv("HTTP_PRINT_DEBUG_ERROR") == "true",
 		CookieSecret:        getEnvironmentVariableOrPanic("COOKIE_SECRET"),
 		EmailOtpSecret:      getEnvironmentVariableOrPanic("EMAIL_OTP_SECRET"),
@@ -115,6 +130,10 @@ type MongoClientConfig struct {
 	Username string
 	Password string
 	Url      string
+}
+
+func (config *MongoClientConfig) String() string {
+	return fmt.Sprintf("Username: %s, Password: <masked>, Url: %s", config.Username, config.Url)
 }
 
 // Parse MongoConfig and return a connection string for use with the MongoDB driver
@@ -143,6 +162,10 @@ type SmtpClientConfig struct {
 	Password    string
 	Host        string
 	Port        uint16
+}
+
+func (config *SmtpClientConfig) String() string {
+	return fmt.Sprintf("Enabled: %t, Username: %s, DisplayName: %s, Password: <masked>, Host: %s, Port: %d", config.Enabled, config.Username, config.DisplayName, config.Host, config.Port)
 }
 
 // Loads SMTP configuration from environment variables. If SMTP_ENABLED is set to false, the SMTP configuration is not required and will not be loaded.

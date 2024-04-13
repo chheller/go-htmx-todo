@@ -44,6 +44,7 @@ func CreateRouter(services *ApplicationServices) *http.ServeMux {
 		user.UserHandlers{
 			UserService: services.UserService,
 		},
+		&web.ErrorPageHandlers{},
 	}
 
 	for _, handler := range handlers {
