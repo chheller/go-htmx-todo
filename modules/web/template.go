@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+
+	"github.com/chheller/go-htmx-todo/modules/config"
 )
 
 //go:embed "templates/*"
@@ -18,7 +20,7 @@ type Template struct {
 var Templates = New()
 
 func New() *Template {
-	templates := template.Must(template.ParseFS(templateFs, "templates/pages/base.layout.html"))
+	templates := template.Must(template.ParseFS(templateFs, "templates/layouts/*"))
 	return &Template{templates: templates}
 }
 
@@ -37,9 +39,16 @@ func (t *Template) WriteTemplateResponse(w http.ResponseWriter, pathPrefix strin
 	var temporaryWriter bytes.Buffer
 	err := t.RenderTemplate(&temporaryWriter, pathPrefix, name, data)
 	if err != nil {
-		w.Header().Set("Location", "/500")
-		w.WriteHeader(http.StatusMovedPermanently)
-		// w.Write(nil)
+		w.WriteHeader(http.StatusInternalServerError)
+		t.RenderTemplate(w, "/pages", "error_500_page", struct {
+			InjectBrowserReloadScript bool
+			ErrorMsg                  string
+			HttpPrintDebugError       bool
+		}{
+			InjectBrowserReloadScript: config.GetEnvironment().InjectBrowserReload,
+			ErrorMsg:                  err.Error(),
+			HttpPrintDebugError:       config.GetEnvironment().ApplicationConfiguration.HttpPrintDebugError,
+		})
 		return
 	}
 
