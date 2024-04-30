@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chheller/go-htmx-todo/modules/config"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -20,7 +21,8 @@ func GetMongoClient() *mongo.Client {
 	opts := options.Client().ApplyURI(mongoConnectionString).SetServerAPIOptions(serverAPI)
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Panic("Failed to connect to database")
 	}
+	logrus.WithField("config", env.MongoConfig).Info("Connected to database")
 	return client
 }

@@ -26,18 +26,16 @@ import (
 
 type UserService struct {
 	client     *mongo.Client
-	ctx        context.Context
 	collection *mongo.Collection
 }
 
 func (svc UserService) Init(client *mongo.Client, ctx context.Context) *UserService {
 	svc.client = client
-	svc.ctx = ctx
 	svc.collection = client.Database("go-todo-htmx").Collection("user")
 	return &svc
 }
 
-func (svc *UserService) VerifyUserOtp(token string) bool {
+func (svc *UserService) VerifyUserOtp(token string, ctx context.Context) bool {
 	log.Debug("Verifying token")
 
 	mac := hmac.New(sha256.New, []byte("secret"))
@@ -54,7 +52,7 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	tokenHash := hex.EncodeToString(mac.Sum(nil))
 
 	query := svc.collection.FindOne(
-		svc.ctx,
+		ctx,
 		bson.M{
 			"verificationtoken": tokenHash,
 			"$or": bson.A{
@@ -84,7 +82,7 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	err = query.Decode(&emailOtpEvent)
 	if err == nil {
 		res, err := svc.collection.InsertOne(
-			svc.ctx,
+			ctx,
 			OtpRevoked{
 				Event:             event.Event{Timestamp: time.Now(), Type: OtpRevokedEvent},
 				UserId:            emailOtpEvent.UserId,
@@ -101,38 +99,53 @@ func (svc *UserService) VerifyUserOtp(token string) bool {
 	return false
 }
 
-var ErrUserInsert = fmt.Errorf("%w:%s", domain.ErrorApplicationGeneric, "failed to insert user")
+var ErrUserInsert = fmt.Errorf("%w: %v", domain.ErrApplication, "failed to insert user")
+var ErrCreateOtp = fmt.Errorf("%w: %v", domain.ErrApplication, "failed to create otp")
+var ErrInsertOtp = fmt.Errorf("%w: %v", domain.ErrApplication, "failed to insert otp")
+var ErrSendOtpEmail = fmt.Errorf("%w: %v", domain.ErrApplication, "failed to send otp email")
 
-func (svc *UserService) CreateUser(user User) error {
+func (svc *UserService) CreateUser(user User, ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer func() {
+		log.Warn("Cancelling create user, timed out")
+		cancel()
+	}()
+
 	log.WithField("user", user).Info("Creating new user")
+
 	userCreatedEvent := &UserCreated{
 		Email:  user.Email,
 		Event:  event.Event{Timestamp: time.Now(), Type: "UserCreated"},
 		UserId: uuid.New(),
 	}
 
-	res, err := svc.collection.InsertOne(svc.ctx, userCreatedEvent)
+	res, err := svc.collection.InsertOne(ctx, userCreatedEvent)
 
 	if err != nil {
-		return fmt.Errorf("%w:%s", ErrUserInsert, err)
+		return fmt.Errorf("%w: %v", ErrUserInsert, err)
 	}
 
 	tokenChallenge, tokenHash, err := createOtpToken()
+
 	if err != nil {
-		log.WithError(err).Error("Create verification token error")
-		return err
+		return fmt.Errorf("%w: %v", ErrUserInsert, err)
 	}
 
-	err = svc.InsertOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash)
+	err = svc.InsertOtp(userCreatedEvent.UserId, tokenChallenge, tokenHash, ctx)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrUserInsert, err)
 	}
 
 	if config.GetEnvironment().SmtpConfig.Enabled {
 		// Fire off an email without blocking the request
 		// TODO: Error handling- maybe emit an event indicating verification email failed
-		go svc.SendOtpEmail(user.Email, tokenChallenge)
+		go func() {
+			err = svc.SendOtpEmail(user.Email, tokenChallenge)
+			if err != nil {
+				log.WithError(err).Error("Failed to send email")
+			}
+		}()
 	} else {
 		log.Debug("Email verification disabled")
 	}
@@ -141,9 +154,9 @@ func (svc *UserService) CreateUser(user User) error {
 	return nil
 }
 
-func (svc *UserService) InsertOtp(userId uuid.UUID, tokenChallenge string, tokenHash string) error {
+func (svc *UserService) InsertOtp(userId uuid.UUID, tokenChallenge string, tokenHash string, ctx context.Context) error {
 
-	_, err := svc.collection.InsertOne(svc.ctx, OtpIssued{
+	_, err := svc.collection.InsertOne(ctx, OtpIssued{
 		Event:             event.Event{Timestamp: time.Now(), Type: OtpIssuedEvent},
 		UserId:            userId,
 		VerificationToken: tokenHash,
@@ -152,26 +165,24 @@ func (svc *UserService) InsertOtp(userId uuid.UUID, tokenChallenge string, token
 	})
 
 	if err != nil {
-		log.WithError(err).Error("Insert OTP Error")
-		return err
+		return fmt.Errorf("%w: %v", ErrInsertOtp, err)
 	}
 	return nil
 }
 
-func (svc *UserService) SendOtpEmail(email string, tokenChallenge string) {
+func (svc *UserService) SendOtpEmail(email string, tokenChallenge string) error {
 
 	redirectUrl := fmt.Sprintf("%s?token=%s", config.GetEnvironment().EmailVerificationRedirectUrl, tokenChallenge)
 	var emailBodyBytes bytes.Buffer
 	err := web.Templates.RenderTemplate(&emailBodyBytes, "/email", "user_verification", VerifyEmailData{RedirectUrl: redirectUrl})
 	if err != nil {
-		log.WithError(err).Error("Template execution error")
-		return
+		return fmt.Errorf("%w: %v", ErrSendOtpEmail, err)
 	}
 	emailBodyString := emailBodyBytes.String()
 	if err = smtp.SendEmail(email, "Verify Email", emailBodyString); err != nil {
-		log.WithError(err).Error("Send OTP Email error")
-		return
+		return fmt.Errorf("%w: %v", ErrSendOtpEmail, err)
 	}
+	return nil
 }
 
 var maxLetterSize = big.NewInt(51)

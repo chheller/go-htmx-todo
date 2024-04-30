@@ -27,8 +27,14 @@ func (uh UserHandlers) Init(router *http.ServeMux) {
 func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Request) {
 	user := &User{}
 	json.NewDecoder(req.Body).Decode(user)
-	u.UserService.CreateUser(*user)
-	res.Write([]byte("POST /user"))
+	err := u.UserService.CreateUser(*user, req.Context())
+	if err != nil {
+		log.WithError(err).Error("Failed to create user")
+		// res.WriteHeader(http.StatusInternalServerError)
+		web.Templates.WriteTemplateResponse(res, "/components/user", "create_user_error", nil)
+		return
+	}
+	web.Templates.WriteTemplateResponse(res, "/components/user", "create_user_success", nil )
 }
 
 func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Request) {
@@ -40,7 +46,7 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	if ok := u.UserService.VerifyUserOtp(token); !ok {
+	if ok := u.UserService.VerifyUserOtp(token, req.Context()); !ok {
 		res.WriteHeader(http.StatusUnauthorized)
 		res.Write([]byte("Bad Authorization"))
 		return
@@ -50,7 +56,7 @@ func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Re
 
 }
 func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
-	web.Templates.WriteTemplateResponse(res, "/pages", "user_signup", viewmodel.DefaultSignupPageData)
+	web.Templates.WriteTemplateResponse(res, "/pages/user", "user_signup", viewmodel.DefaultSignupPageData)
 }
 
 func (u *UserHandlers) handleGetHomePage(res http.ResponseWriter, req *http.Request) {

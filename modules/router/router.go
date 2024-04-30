@@ -40,7 +40,9 @@ func CreateRouter(services *ApplicationServices) *http.ServeMux {
 
 			// Start a goroutine to read messages from the websocket connection
 			go func() {
+				// TODO: Test if we need to sleep between polls here?
 				for {
+					// Don't care about marshalling, because the only thing we expect is an EOF error
 					err := websocket.Message.Receive(ws, &struct{}{})
 					if err != nil {
 						log.Info("Websocket connection closed by client")
