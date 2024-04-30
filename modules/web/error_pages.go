@@ -10,13 +10,22 @@ type ErrorPageHandlers struct {
 }
 
 func (h *ErrorPageHandlers) Init(router *http.ServeMux) {
+	router.HandleFunc("GET /401", h.handle401)
 	router.HandleFunc("GET /404", h.handle404)
 	router.HandleFunc("GET /403", h.handle403)
 	router.HandleFunc("/", h.handle404)
 }
 
+func (h *ErrorPageHandlers) handle401(res http.ResponseWriter, req *http.Request) {
+	Templates.WriteTemplateResponse(res, "/pages/error", "error_401_page", struct {
+		InjectBrowserReloadScript bool
+	}{
+		InjectBrowserReloadScript: config.GetEnvironment().InjectBrowserReload,
+	})
+}
+
 func (h *ErrorPageHandlers) handle404(res http.ResponseWriter, req *http.Request) {
-	Templates.WriteTemplateResponse(res, "/pages", "error_404_page", struct {
+	Templates.WriteTemplateResponse(res, "/pages/error", "error_404_page", struct {
 		InjectBrowserReloadScript bool
 	}{
 		InjectBrowserReloadScript: config.GetEnvironment().InjectBrowserReload,
@@ -24,13 +33,9 @@ func (h *ErrorPageHandlers) handle404(res http.ResponseWriter, req *http.Request
 }
 
 func (h *ErrorPageHandlers) handle403(res http.ResponseWriter, req *http.Request) {
-	Templates.WriteTemplateResponse(res, "/pages", "error_403_page", struct {
+	Templates.WriteTemplateResponse(res, "/pages/error", "error_403_page", struct {
 		InjectBrowserReloadScript bool
-		ErrorMsg                  string
-		HttpPrintDebugError       bool
 	}{
 		InjectBrowserReloadScript: config.GetEnvironment().InjectBrowserReload,
-		ErrorMsg:                  "Forbidden",
-		HttpPrintDebugError:       config.GetEnvironment().ApplicationConfiguration.HttpPrintDebugError,
 	})
 }

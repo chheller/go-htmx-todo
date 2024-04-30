@@ -21,7 +21,7 @@ func (uh UserHandlers) Init(router *http.ServeMux) {
 	router.HandleFunc("GET /signup", uh.handleGetUserPage)
 	router.HandleFunc("POST /signup", uh.handleCreateUser)
 	router.HandleFunc("GET /home", uh.handleGetHomePage)
-	router.HandleFunc("GET /signup/verify", uh.handleVerifyUserOtp)
+	router.HandleFunc("GET /verify", uh.handleVerifyUserOtp)
 }
 
 func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Request) {
@@ -39,21 +39,26 @@ func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Reque
 
 func (u *UserHandlers) handleVerifyUserOtp(res http.ResponseWriter, req *http.Request) {
 	token := req.URL.Query().Get("token")
+	redirect := req.URL.Query().Get("redirect")
+	if (redirect == "") {
+		redirect = "/home"
+	}
+
 	if token == "" {
+		res.Header().Add("location", "/401")
+		res.WriteHeader(http.StatusTemporaryRedirect)
 		log.Info("token param not found in query params")
-		res.WriteHeader(http.StatusBadRequest)
-		res.Write([]byte("Invalid token"))
 		return
 	}
 
 	if ok := u.UserService.VerifyUserOtp(token, req.Context()); !ok {
-		res.WriteHeader(http.StatusUnauthorized)
-		res.Write([]byte("Bad Authorization"))
+		log.Info("Failed to verify token")
+		res.Header().Add("location", "/401")
+		res.WriteHeader(http.StatusTemporaryRedirect)
 		return
 	}
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte("OK"))
-
+	res.Header().Add("location", redirect)
+	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 func (u *UserHandlers) handleGetUserPage(res http.ResponseWriter, req *http.Request) {
 	web.Templates.WriteTemplateResponse(res, "/pages/user", "user_signup", viewmodel.DefaultSignupPageData)

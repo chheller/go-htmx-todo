@@ -40,7 +40,7 @@ func (t *Template) WriteTemplateResponse(w http.ResponseWriter, pathPrefix strin
 	err := t.RenderTemplate(&temporaryWriter, pathPrefix, name, data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		t.RenderTemplate(w, "/pages", "error_500_page", struct {
+		t.RenderTemplate(w, "/pages/error", "error_500_page", struct {
 			InjectBrowserReloadScript bool
 			ErrorMsg                  string
 			HttpPrintDebugError       bool
