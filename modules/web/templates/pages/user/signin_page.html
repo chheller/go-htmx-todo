@@ -1,0 +1,20 @@
+{{template "base" .}} {{define "title"}}Signing in...{{end}}{{define "content"}}
+
+<div class="container mx-auto">
+    <div class="flex justify-center items-center h-screen">
+        <div class="w-1/2">
+            <p>{{ .VerificationToken }}</p>
+
+            <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                <div class="bg-black inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] text-surface motion-reduce:animate-[spin_1.5s_linear_infinite] dark:text-white"
+                    role="status">
+                    <span
+                        class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

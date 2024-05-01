@@ -36,6 +36,12 @@ func (svc UserService) Init(client *mongo.Client, ctx context.Context) *UserServ
 }
 
 func (svc *UserService) VerifyUserOtp(token string, ctx context.Context) bool {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer func() {
+		log.Warn("Cancelling create user, timed out")
+		cancel()
+	}()
+	
 	log.Debug("Verifying token")
 
 	mac := hmac.New(sha256.New, []byte("secret"))

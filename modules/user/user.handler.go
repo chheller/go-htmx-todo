@@ -19,11 +19,22 @@ func (uh UserHandlers) Init(router *http.ServeMux) {
 		panic("UserService must be initialized before calling InitializeHandlers")
 	}
 	router.HandleFunc("GET /signup", uh.handleGetUserPage)
+	router.HandleFunc("GET /signup/finalize", uh.handleGetUserSignupFinalizePage)
 	router.HandleFunc("POST /signup", uh.handleCreateUser)
+	router.HandleFunc("POST /user", uh.handleCreateUser)
+	router.HandleFunc("GET /signin", uh.handleGetSigninPage)
 	router.HandleFunc("GET /home", uh.handleGetHomePage)
 	router.HandleFunc("GET /verify", uh.handleVerifyUserOtp)
 }
 
+func (u *UserHandlers) handleGetUserSignupFinalizePage(res http.ResponseWriter, req *http.Request) {
+	web.Templates.WriteTemplateResponse(res, "/pages/user", "user_signup_profile_form", viewmodel.DefaultSignupCompletePageData)
+}
+
+func (u *UserHandlers) handleGetSigninPage(res http.ResponseWriter, req *http.Request) {
+	token := req.Header.Get("token")
+	web.Templates.WriteTemplateResponse(res, "/pages/user", "signin_page", viewmodel.DefaultSigninPageData(token))
+}
 func (u *UserHandlers) handleCreateUser(res http.ResponseWriter, req *http.Request) {
 	user := &User{}
 	json.NewDecoder(req.Body).Decode(user)
